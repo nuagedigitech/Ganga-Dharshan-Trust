@@ -223,7 +223,7 @@
   align-items: center;
   border-radius: 120px;
   background-color: #fff;
-  background-image: url('../images/Bagamati_cremation.jpg');
+  background-image: url('../images/widows-india-vrindavan1.jpg');
   background-position: 50% 50%;
   background-size: cover;
   box-shadow: 1px 1px 9px 0 #000;
@@ -242,6 +242,10 @@
 
 .home-tab-div-tab-2.row-4 {
   background-image: url('../images/56.jpg');
+}
+
+.home-tab-div-tab-2.row-5 {
+  background-image: url('../images/Bagamati_cremation.jpg');
 }
 
 .home-tab-div-tab-3 {
