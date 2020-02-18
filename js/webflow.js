@@ -3896,13 +3896,24 @@ function createLightbox(window, document, $, container) {
   }
 
   function maybeScroll($item) {
-    var itemLeft = $item.position().left;
-    var stripScrollLeft = $refs.strip.scrollLeft();
-    var stripWidth = $refs.strip.width();
+    var itemElement = $item.get(0);
+    var stripElement = $refs.strip.get(0);
+    var itemLeft = itemElement.offsetLeft;
+    var itemWidth = itemElement.clientWidth;
+    var stripScrollLeft = stripElement.scrollLeft;
+    var stripWidth = stripElement.clientWidth;
+    var stripScrollLeftMax = stripElement.scrollWidth - stripWidth;
+    var newScrollLeft;
 
-    if (itemLeft < stripScrollLeft || itemLeft > stripWidth + stripScrollLeft) {
+    if (itemLeft < stripScrollLeft) {
+      newScrollLeft = Math.max(0, itemLeft + itemWidth - stripWidth);
+    } else if (itemLeft + itemWidth > stripWidth + stripScrollLeft) {
+      newScrollLeft = Math.min(itemLeft, stripScrollLeftMax);
+    }
+
+    if (newScrollLeft != null) {
       tram($refs.strip).add('scroll-left 500ms').start({
-        'scroll-left': itemLeft
+        'scroll-left': newScrollLeft
       });
     }
   }
