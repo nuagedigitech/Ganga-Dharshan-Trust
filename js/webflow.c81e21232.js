@@ -1343,7 +1343,7 @@ module.exports = _interopRequireDefault;
 // eslint-disable-next-line strict
 
 
-var IXEvents = __webpack_require__(12);
+var IXEvents = __webpack_require__(13);
 
 function dispatchCustomEvent(element, eventName) {
   var event = document.createEvent('CustomEvent');
@@ -1388,9 +1388,10 @@ __webpack_require__(8);
 __webpack_require__(9);
 __webpack_require__(10);
 __webpack_require__(11);
-__webpack_require__(13);
-__webpack_require__(18);
-module.exports = __webpack_require__(19);
+__webpack_require__(12);
+__webpack_require__(14);
+__webpack_require__(19);
+module.exports = __webpack_require__(20);
 
 
 /***/ }),
@@ -1888,6 +1889,174 @@ module.exports = _typeof;
 "use strict";
  // @wf-will-never-add-flow-to-this-file
 
+/* globals document, window, localStorage, WEBFLOW_API_HOST, WEBFLOW_DEFAULT_HOST */
+
+/* eslint-disable no-var */
+
+/**
+ * Webflow: Editor loader
+ */
+
+var Webflow = __webpack_require__(0);
+
+Webflow.define('edit', module.exports = function ($, _, options) {
+  options = options || {}; // Exit early in test env or when inside an iframe
+
+  if (Webflow.env('test') || Webflow.env('frame')) {
+    // Allow test fixtures to continue
+    if (!options.fixture && !inCypress()) {
+      return {
+        exit: 1
+      };
+    }
+  }
+
+  var api = {};
+  var $win = $(window);
+  var $html = $(document.documentElement);
+  var location = document.location;
+  var hashchange = 'hashchange';
+  var loaded;
+  var loadEditor = options.load || load;
+  var hasLocalStorage = false;
+
+  try {
+    // Check localStorage for editor data
+    hasLocalStorage = localStorage && localStorage.getItem && localStorage.getItem('WebflowEditor');
+  } catch (e) {// SecurityError: browser storage has been disabled
+  }
+
+  if (hasLocalStorage) {
+    loadEditor();
+  } else if (location.search) {
+    // Check url query for `edit` parameter or any url ending in `?edit`
+    if (/[?&](edit)(?:[=&?]|$)/.test(location.search) || /\?edit$/.test(location.href)) {
+      loadEditor();
+    }
+  } else {
+    // Check hash fragment to support `#hash?edit`
+    $win.on(hashchange, checkHash).triggerHandler(hashchange);
+  }
+
+  function checkHash() {
+    if (loaded) {
+      return;
+    } // Load editor when hash contains `?edit`
+
+
+    if (/\?edit/.test(location.hash)) {
+      loadEditor();
+    }
+  }
+
+  function load() {
+    loaded = true; // Predefine global immediately to benefit Webflow.env
+
+    window.WebflowEditor = true;
+    $win.off(hashchange, checkHash);
+    checkThirdPartyCookieSupport(function (thirdPartyCookiesSupported) {
+      $.ajax({
+        url: cleanSlashes("https://editor-api.webflow.com" + '/api/editor/view'),
+        data: {
+          siteId: $html.attr('data-wf-site')
+        },
+        xhrFields: {
+          withCredentials: true
+        },
+        dataType: 'json',
+        crossDomain: true,
+        success: success(thirdPartyCookiesSupported)
+      });
+    });
+  }
+
+  function success(thirdPartyCookiesSupported) {
+    return function (data) {
+      if (!data) {
+        console.error('Could not load editor data');
+        return;
+      }
+
+      data.thirdPartyCookiesSupported = thirdPartyCookiesSupported;
+      getScript(prefix(data.bugReporterScriptPath), function () {
+        getScript(prefix(data.scriptPath), function () {
+          window.WebflowEditor(data);
+        });
+      });
+    };
+  }
+
+  function getScript(url, done) {
+    $.ajax({
+      type: 'GET',
+      url: url,
+      dataType: 'script',
+      cache: true
+    }).then(done, error);
+  }
+
+  function error(jqXHR, textStatus, errorThrown) {
+    console.error('Could not load editor script: ' + textStatus);
+    throw errorThrown;
+  }
+
+  function prefix(url) {
+    return url.indexOf('//') >= 0 ? url : cleanSlashes("https://editor-api.webflow.com" + url);
+  }
+
+  function cleanSlashes(url) {
+    return url.replace(/([^:])\/\//g, '$1/');
+  }
+
+  function checkThirdPartyCookieSupport(callback) {
+    var iframe = window.document.createElement('iframe');
+    iframe.src = "https://webflow.com" + '/site/third-party-cookie-check.html';
+    iframe.style.display = 'none';
+    iframe.sandbox = 'allow-scripts allow-same-origin';
+
+    var handleMessage = function handleMessage(event) {
+      if (event.data === 'WF_third_party_cookies_unsupported') {
+        cleanUpCookieCheckerIframe(iframe, handleMessage);
+        callback(false);
+      } else if (event.data === 'WF_third_party_cookies_supported') {
+        cleanUpCookieCheckerIframe(iframe, handleMessage);
+        callback(true);
+      }
+    };
+
+    iframe.onerror = function () {
+      cleanUpCookieCheckerIframe(iframe, handleMessage);
+      callback(false);
+    };
+
+    window.addEventListener('message', handleMessage, false);
+    window.document.body.appendChild(iframe);
+  }
+
+  function cleanUpCookieCheckerIframe(iframe, listener) {
+    window.removeEventListener('message', listener, false);
+    iframe.remove();
+  } // Export module
+
+
+  return api;
+});
+
+function inCypress() {
+  try {
+    return window.top.__Cypress__;
+  } catch (e) {
+    return false;
+  }
+}
+
+/***/ }),
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+ // @wf-will-never-add-flow-to-this-file
+
 /* globals window, document */
 
 /* eslint-disable no-var */
@@ -2012,7 +2181,7 @@ Webflow.define('links', module.exports = function ($, _) {
 });
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2179,7 +2348,7 @@ Webflow.define('scroll', module.exports = function ($) {
 });
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2320,7 +2489,7 @@ Webflow.define('touch', module.exports = function ($) {
 });
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2836,7 +3005,7 @@ Webflow.define('dropdown', module.exports = function ($, _) {
 });
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2916,7 +3085,7 @@ api.async();
 module.exports = api;
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2938,7 +3107,7 @@ module.exports = api;
 
 var _interopRequireDefault = __webpack_require__(2);
 
-var _slicedToArray2 = _interopRequireDefault(__webpack_require__(14));
+var _slicedToArray2 = _interopRequireDefault(__webpack_require__(15));
 
 var Webflow = __webpack_require__(0);
 
@@ -3171,7 +3340,58 @@ Webflow.define('forms', module.exports = function ($, _) {
   function exportedSubmitWebflow(data) {
     preventDefault(data);
     afterSubmit(data);
-  } // Submit form to MailChimp
+  }
+  /* WEBFLOW_HOSTED_BLOCK:START */
+  // Submit form to Webflow
+
+
+  function hostedSubmitWebflow(data) {
+    reset(data);
+    var form = data.form;
+    var payload = {
+      name: form.attr('data-name') || form.attr('name') || 'Untitled Form',
+      source: loc.href,
+      test: Webflow.env(),
+      fields: {},
+      fileUploads: {},
+      dolphin: /pass[\s-_]?(word|code)|secret|login|credentials/i.test(form.html())
+    };
+    preventDefault(data); // Find & populate all fields
+
+    var status = findFields(form, payload.fields);
+
+    if (status) {
+      return alert(status);
+    }
+
+    payload.fileUploads = findFileUploads(form); // Disable submit button
+
+    disableBtn(data); // Read site ID
+    // NOTE: If this site is exported, the HTML tag must retain the data-wf-site attribute for forms to work
+
+    if (!siteId) {
+      afterSubmit(data);
+      return;
+    }
+
+    $.ajax({
+      url: formUrl,
+      type: 'POST',
+      data: payload,
+      dataType: 'json',
+      crossDomain: true
+    }).done(function (response) {
+      if (response && response.code === 200) {
+        data.success = true;
+      }
+
+      afterSubmit(data);
+    }).fail(function () {
+      afterSubmit(data);
+    });
+  }
+  /* WEBFLOW_HOSTED_BLOCK:END */
+  // Submit form to MailChimp
 
 
   function submitMailChimp(data) {
@@ -3442,14 +3662,14 @@ Webflow.define('forms', module.exports = function ($, _) {
 });
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var arrayWithHoles = __webpack_require__(15);
+var arrayWithHoles = __webpack_require__(16);
 
-var iterableToArrayLimit = __webpack_require__(16);
+var iterableToArrayLimit = __webpack_require__(17);
 
-var nonIterableRest = __webpack_require__(17);
+var nonIterableRest = __webpack_require__(18);
 
 function _slicedToArray(arr, i) {
   return arrayWithHoles(arr) || iterableToArrayLimit(arr, i) || nonIterableRest();
@@ -3458,7 +3678,7 @@ function _slicedToArray(arr, i) {
 module.exports = _slicedToArray;
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports) {
 
 function _arrayWithHoles(arr) {
@@ -3468,7 +3688,7 @@ function _arrayWithHoles(arr) {
 module.exports = _arrayWithHoles;
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports) {
 
 function _iterableToArrayLimit(arr, i) {
@@ -3500,7 +3720,7 @@ function _iterableToArrayLimit(arr, i) {
 module.exports = _iterableToArrayLimit;
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports) {
 
 function _nonIterableRest() {
@@ -3510,7 +3730,7 @@ function _nonIterableRest() {
 module.exports = _nonIterableRest;
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4175,7 +4395,7 @@ Webflow.define('lightbox', module.exports = function ($) {
 });
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4206,7 +4426,6 @@ Webflow.define('navbar', module.exports = function ($, _) {
   var overlay = '<div class="w-nav-overlay" data-wf-ignore />';
   var namespace = '.w-nav';
   var navbarOpenedButton = 'w--open';
-  var navbarOpenedMenu = 'w--nav-menu-open';
   var navbarOpenedDropdown = 'w--nav-dropdown-open';
   var navbarOpenedDropdownToggle = 'w--nav-dropdown-toggle-open';
   var navbarOpenedDropdownList = 'w--nav-dropdown-list-open';
@@ -4469,13 +4688,21 @@ Webflow.define('navbar', module.exports = function ($, _) {
     };
   }
 
+  function addMenuOpen(i, el) {
+    el.setAttribute('data-nav-menu-open', '');
+  }
+
+  function removeMenuOpen(i, el) {
+    el.removeAttribute('data-nav-menu-open');
+  }
+
   function open(data, immediate) {
     if (data.open) {
       return;
     }
 
     data.open = true;
-    data.menu.addClass(navbarOpenedMenu);
+    data.menu.each(addMenuOpen);
     data.links.addClass(navbarOpenedLink);
     data.dropdowns.addClass(navbarOpenedDropdown);
     data.dropdownToggle.addClass(navbarOpenedDropdownToggle);
@@ -4595,7 +4822,7 @@ Webflow.define('navbar', module.exports = function ($, _) {
         x: 0,
         y: 0
       });
-      data.menu.removeClass(navbarOpenedMenu);
+      data.menu.each(removeMenuOpen);
       data.links.removeClass(navbarOpenedLink);
       data.dropdowns.removeClass(navbarOpenedDropdown);
       data.dropdownToggle.removeClass(navbarOpenedDropdownToggle);
