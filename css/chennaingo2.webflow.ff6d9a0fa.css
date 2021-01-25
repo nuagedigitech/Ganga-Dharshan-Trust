@@ -1055,6 +1055,17 @@
   text-transform: capitalize;
 }
 
+.text-block-heading2-white-contact-email {
+  margin-bottom: 10px;
+  padding-top: 15px;
+  font-family: 'PT Sans', sans-serif;
+  color: #fff;
+  font-size: 20px;
+  line-height: 30px;
+  font-weight: 400;
+  text-align: left;
+}
+
 .image-2 {
   color: #000;
 }
